@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en">
-  <script src="https://js.paystack.co/v2/inline.js"></script>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -12,6 +11,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 @media(max-width:900px){.hero-in{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.feature-in,.step-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.links{display:none}}
 @media(max-width:520px){.hero-in{padding:55px 18px}.hero h1{letter-spacing:-2px}.cards{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.section h2,.cta h2{font-size:34px}.navin{padding:13px 15px}.brand{font-size:21px}}
 </style>
+<script src="https://js.paystack.co/v2/inline.js"></script>
 </head>
 <body>
 <nav class="nav"><div class="navin">
@@ -82,9 +82,26 @@ function renderCards(){
   document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}','${b.id}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
 }
 function setNetwork(n){current=n;renderTabs();renderHeroNetworks();renderCards();}
-function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('phone').value='';document.getElementById('modal').classList.add('show');}
+function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-async function checkout(){const input=document.getElementById('phone');const phone=input.value.trim().replace(/\s+/g,'');if(!/^(0\d{9}|\+233\d{9})$/.test(phone)){alert('Please enter a valid Ghana phone number, e.g. 0241234567.');return}if(!selected||!selected.id){alert('Please select a bundle again.');return}const btn=document.querySelector('#modal .primary');if(btn){btn.disabled=true;btn.textContent='Creating order...';}try{const {data,error}=await supabaseClient.rpc('create_order',{p_customer_phone:phone,p_bundle_id:selected.id});if(error)throw error;const orderId=Array.isArray(data)?data[0]:data;closeModal();alert('Order created successfully!\nOrder ID: '+orderId+'\n\nPayment is not connected yet, so no money was charged.');}catch(err){console.error(err);alert('Could not create order: '+(err.message||'Please try again.'));}finally{if(btn){btn.disabled=false;btn.textContent='Continue to Payment';}}}
+async function checkout(){
+  const phone=document.getElementById('phone').value.trim();
+  if(!/^(\\+233|0)\\d{9}$/.test(phone.replace(/\\s/g,''))){alert('Please enter a valid Ghana phone number, e.g. 0241234567.');return;}
+  if(!selected||!selected.id){alert('This bundle is missing its database ID. Refresh the page and try again.');return;}
+  const email=(prompt('Enter the customer email address for Paystack:')||'').trim();
+  if(!email||!email.includes('@')){alert('Please enter a valid email address.');return;}
+  if(typeof Paystack==='undefined'){alert('Paystack did not load. Refresh the page and try again.');return;}
+  const button=document.querySelector('#modal .primary'); if(button){button.disabled=true;button.textContent='Creating order...';}
+  try{
+    const {data:order,error}=await supabaseClient.rpc('create_order',{p_customer_phone:phone.replace(/\\s/g,''),p_bundle_id:selected.id});
+    if(error) throw error;
+    const orderId=Array.isArray(order)?order[0]:order;
+    const reference='DDGH-'+Date.now();
+    const popup=new Paystack();
+    await popup.checkout({key:DATADEAL_PAYSTACK_PUBLIC_KEY,email,amount:Math.round(Number(selected.p)*100),currency:'GHS',reference,phone:phone.replace(/\\s/g,''),metadata:{order_id:orderId,custom_fields:[{display_name:'DataDeal Order',variable_name:'order_id',value:String(orderId)},{display_name:'Phone',variable_name:'phone',value:phone.replace(/\\s/g,'')},{display_name:'Bundle',variable_name:'bundle',value:selected.b} ]},onSuccess:function(transaction){alert('TEST PAYMENT COMPLETED\\n\\nReference: '+(transaction.reference||reference)+'\\nOrder ID: '+orderId+'\\n\\nThe order remains pending until payment is verified securely.');closeModal();},onCancel:function(){alert('Payment window closed. Your order remains pending.');},onError:function(error){alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));}});
+  }catch(error){console.error(error);alert('Could not start payment: '+(error&&error.message?error.message:(error.message||error)));}
+  finally{if(button){button.disabled=false;button.textContent='Continue to Payment';}}
+}
 async function openAdmin(){
   document.getElementById('adminPanel').classList.add('show');
   const {data:{session}}=await supabaseClient.auth.getSession();
@@ -135,6 +152,9 @@ async function deleteBundle(id){if(!confirm('Delete this bundle?'))return;const 
 async function adminLogout(){await supabaseClient.auth.signOut();renderLogin();}
 loadNetworks();
 </script>
+
+<script>const DATADEAL_PAYSTACK_PUBLIC_KEY="pk_test_174700b123e49f18b6bb428a781a6bc4aa3a9b6f";</script>
+
+
 </body>
 </html>
-
