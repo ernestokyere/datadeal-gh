@@ -78,12 +78,12 @@ function renderHeroNetworks(){
 }
 function renderCards(){
   const rows=allBundles.filter(b=>b.networks?.name===current);
-  document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
+  document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}','${b.id}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
 }
 function setNetwork(n){current=n;renderTabs();renderHeroNetworks();renderCards();}
-function openModal(n,b,p,v){selected={n,b,p,v};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
+function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('phone').value='';document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-function checkout(){let p=document.getElementById('phone').value.trim();if(p.length<10){alert('Please enter a valid Ghana phone number.');return}alert('Checkout interface is ready. Payment and automatic bundle delivery will be connected before launch.');}
+async function checkout(){const input=document.getElementById('phone');const phone=input.value.trim().replace(/\s+/g,'');if(!/^(0\d{9}|\+233\d{9})$/.test(phone)){alert('Please enter a valid Ghana phone number, e.g. 0241234567.');return}if(!selected||!selected.id){alert('Please select a bundle again.');return}const btn=document.querySelector('#modal .primary');if(btn){btn.disabled=true;btn.textContent='Creating order...';}try{const {data,error}=await supabaseClient.rpc('create_order',{p_customer_phone:phone,p_bundle_id:selected.id});if(error)throw error;const orderId=Array.isArray(data)?data[0]:data;closeModal();alert('Order created successfully!\nOrder ID: '+orderId+'\n\nPayment is not connected yet, so no money was charged.');}catch(err){console.error(err);alert('Could not create order: '+(err.message||'Please try again.'));}finally{if(btn){btn.disabled=false;btn.textContent='Continue to Payment';}}}
 async function openAdmin(){
   document.getElementById('adminPanel').classList.add('show');
   const {data:{session}}=await supabaseClient.auth.getSession();
@@ -136,8 +136,3 @@ loadNetworks();
 </script>
 </body>
 </html>
-
-
-
-
- 
