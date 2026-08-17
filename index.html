@@ -11,6 +11,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 @media(max-width:900px){.hero-in{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.feature-in,.step-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.links{display:none}}
 @media(max-width:520px){.hero-in{padding:55px 18px}.hero h1{letter-spacing:-2px}.cards{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.section h2,.cta h2{font-size:34px}.navin{padding:13px 15px}.brand{font-size:21px}}
 </style>
+<script src="https://js.paystack.co/v2/inline.js"></script>
 </head>
 <body>
 <nav class="nav"><div class="navin">
@@ -81,9 +82,44 @@ function renderCards(){
   document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
 }
 function setNetwork(n){current=n;renderTabs();renderHeroNetworks();renderCards();}
-function openModal(n,b,p,v){selected={n,b,p,v};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
+function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-function checkout(){let p=document.getElementById('phone').value.trim();if(p.length<10){alert('Please enter a valid Ghana phone number.');return}alert('Checkout interface is ready. Payment and automatic bundle delivery will be connected before launch.');}
+async function checkout(){
+  const phone=document.getElementById('phone').value.trim().replace(/[\s\-()]/g,'');
+  if(!/^(0\d{9}|\+233\d{9}|233\d{9})$/.test(phone)){
+    alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.'); return;
+  }
+  if(!selected || !selected.p){alert('Please select a bundle again.'); return;}
+  if(typeof Paystack==='undefined'){alert('Paystack did not load. Please refresh the page and try again.'); return;}
+  const email=(prompt('Enter the customer email address for Paystack:')||'').trim();
+  if(!email || !email.includes('@')){alert('Please enter a valid email address.'); return;}
+  const reference='DDGH-'+Date.now();
+  try{
+    const popup=new Paystack();
+    await popup.checkout({
+      key:DATADEAL_PAYSTACK_PUBLIC_KEY,
+      email:email,
+      amount:Math.round(Number(selected.p)*100),
+      currency:'GHS',
+      reference:reference,
+      phone:phone,
+      metadata:{custom_fields:[
+        {display_name:'Phone',variable_name:'phone',value:phone},
+        {display_name:'Bundle',variable_name:'bundle',value:selected.b+' '+selected.n}
+      ]},
+      onSuccess:function(transaction){
+        alert('TEST PAYMENT COMPLETED\n\nReference: '+(transaction.reference||reference)+
+          '\n\nPayment still needs secure server-side verification before the order is marked PAID.');
+        closeModal();
+      },
+      onCancel:function(){alert('Payment window closed. No payment was completed.');},
+      onError:function(error){alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));}
+    });
+  }catch(error){
+    console.error(error);
+    alert('Could not open Paystack: '+(error&&error.message?error.message:error));
+  }
+}
 async function openAdmin(){
   document.getElementById('adminPanel').classList.add('show');
   const {data:{session}}=await supabaseClient.auth.getSession();
@@ -134,5 +170,114 @@ async function deleteBundle(id){if(!confirm('Delete this bundle?'))return;const 
 async function adminLogout(){await supabaseClient.auth.signOut();renderLogin();}
 loadNetworks();
 </script>
+
+<script>
+/* DATADEAL GH — Paystack TEST integration.
+   Public key only. Never put a Paystack secret key in this file.
+*/
+const DATADEAL_PAYSTACK_PUBLIC_KEY = "pk_test_174700b123e49f18b6bb428a781a6bc4aa3a9b6f";
+
+window.startDataDealPaystackTest = async function(bundle) {
+  bundle = bundle || {};
+  const email = (prompt("Enter customer email:") || "").trim();
+  const phone = (prompt("Enter Ghana phone number:") || "").trim();
+  const amount = Number(bundle.price);
+
+  if (!email || !email.includes("@")) {
+    alert("Please enter a valid email address.");
+    return;
+  }
+  if (!/^(\+233|0)\d{9}$/.test(phone.replace(/\s/g, ""))) {
+    alert("Please enter a valid Ghana phone number.");
+    return;
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("This bundle has an invalid price.");
+    return;
+  }
+  if (typeof Paystack === "undefined") {
+    alert("Paystack did not load. Please refresh the page and try again.");
+    return;
+  }
+
+  const reference = "DDGH-" + Date.now();
+
+  try {
+    const popup = new Paystack();
+    await popup.checkout({
+      key: DATADEAL_PAYSTACK_PUBLIC_KEY,
+      email: email,
+      amount: Math.round(amount * 100),
+      currency: "GHS",
+      reference: reference,
+      phone: phone,
+      metadata: {
+        custom_fields: [
+          {display_name:"Phone", variable_name:"phone", value:phone},
+          {display_name:"Bundle", variable_name:"bundle", value:bundle.name || "Data bundle"}
+        ]
+      },
+      onSuccess: function(transaction) {
+        alert(
+          "TEST PAYMENT COMPLETED\n\n" +
+          "Reference: " + (transaction.reference || reference) +
+          "\n\nThis does NOT mark the DataDeal order as paid yet. " +
+          "We must verify the transaction securely on the server first."
+        );
+      },
+      onCancel: function() {
+        alert("Payment window closed. The order remains pending.");
+      },
+      onError: function(error) {
+        alert("Paystack error: " + (error && error.message ? error.message : "Unknown error"));
+      }
+    });
+  } catch (error) {
+    alert("Could not open Paystack: " + (error && error.message ? error.message : error));
+  }
+};
+
+/* If your existing page has an openModal(name,data,price,validity,id)
+   function, add a Paystack TEST button to the checkout modal. */
+(function() {
+  const originalOpenModal = window.openModal;
+  if (typeof originalOpenModal !== "function") return;
+
+  window.openModal = function(name, data, price, validity, id) {
+    const result = originalOpenModal.apply(this, arguments);
+    setTimeout(function() {
+      const modal = document.querySelector("#modal");
+      if (!modal || modal.querySelector("[data-paystack-test]")) return;
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-paystack-test", "1");
+      button.textContent = "Pay with Paystack (TEST)";
+      button.style.cssText =
+        "display:block;width:100%;margin-top:10px;padding:12px;border:0;" +
+        "border-radius:10px;background:#0b6b45;color:#fff;font-weight:700;cursor:pointer;";
+
+      button.addEventListener("click", function() {
+        window.startDataDealPaystackTest({
+          id: id,
+          name: name,
+          data: data,
+          price: Number(price),
+          validity: validity
+        });
+      });
+
+      const target = modal.querySelector(".primary") || modal.querySelector("button");
+      if (target && target.parentNode) {
+        target.parentNode.insertBefore(button, target.nextSibling);
+      } else {
+        modal.appendChild(button);
+      }
+    }, 50);
+    return result;
+  };
+})();
+</script>
+
 </body>
 </html>
