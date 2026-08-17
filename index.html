@@ -87,15 +87,19 @@ function closeModal(){document.getElementById('modal').classList.remove('show')}
 async function checkout(){
   const phone=document.getElementById('phone').value.trim().replace(/[\s\-()]/g,'');
   if(!/^(0\d{9}|\+233\d{9}|233\d{9})$/.test(phone)){
-    alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.'); return;
+    alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.');
+    return;
   }
-  if(!selected || !selected.p){alert('Please select a bundle again.'); return;}
-  if(typeof Paystack==='undefined'){alert('Paystack did not load. Please refresh the page and try again.'); return;}
+  if(!selected || !selected.p){ alert('Please select a bundle again.'); return; }
   const email=(prompt('Enter the customer email address for Paystack:')||'').trim();
-  if(!email || !email.includes('@')){alert('Please enter a valid email address.'); return;}
+  if(!email || !email.includes('@')){ alert('Please enter a valid email address.'); return; }
+  if(typeof window.Paystack !== 'function'){
+    alert('Paystack is still loading. Please wait a few seconds and try again.');
+    return;
+  }
   const reference='DDGH-'+Date.now();
   try{
-    const popup=new Paystack();
+    const popup=new window.Paystack();
     await popup.checkout({
       key:DATADEAL_PAYSTACK_PUBLIC_KEY,
       email:email,
@@ -109,11 +113,11 @@ async function checkout(){
       ]},
       onSuccess:function(transaction){
         alert('TEST PAYMENT COMPLETED\n\nReference: '+(transaction.reference||reference)+
-          '\n\nPayment still needs secure server-side verification before the order is marked PAID.');
+          '\n\nPayment must be verified securely before an order is marked PAID.');
         closeModal();
       },
-      onCancel:function(){alert('Payment window closed. No payment was completed.');},
-      onError:function(error){alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));}
+      onCancel:function(){ alert('Payment window closed. No payment was completed.'); },
+      onError:function(error){ alert('Paystack error: '+(error&&error.message?error.message:'Unknown error')); }
     });
   }catch(error){
     console.error(error);
