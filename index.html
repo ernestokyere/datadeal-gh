@@ -31,7 +31,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 <div class="feature"><span class="icon">🇬🇭</span><div><b>Made for Ghana</b><span class="muted">A Ghana-focused experience.</span></div></div>
 </div></section>
 
-<section id="bundles" class="section"><div class="center"><div class="eyebrow">Data Bundles</div><h2>Choose Your Network</h2><p class="muted">Test checkout is enabled. Automatic bundle delivery will be connected next.</p></div><div class="tabs" id="tabs"></div><div class="cards" id="cards"></div></section>
+<section id="bundles" class="section"><div class="center"><div class="eyebrow">Data Bundles</div><h2>Choose Your Network</h2><p class="muted">Demo prices shown for the first design version.</p></div><div class="tabs" id="tabs"></div><div class="cards" id="cards"></div></section>
 
 <section id="how" class="steps"><div class="section"><div class="center"><div class="eyebrow">Simple Process</div><h2>How It Works</h2></div><div class="step-grid">
 <div class="step"><div class="num">01</div><h3>Choose a bundle</h3><p class="muted">Select your network and preferred data package.</p></div>
@@ -82,7 +82,14 @@ function renderCards(){
   document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}','${b.id}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
 }
 function setNetwork(n){current=n;renderTabs();renderHeroNetworks();renderCards();}
-function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
+function openModal(n,b,p,v,id){
+  selected={n,b,p,v,id};
+  document.getElementById('mNetwork').textContent=n;
+  document.getElementById('mBundle').textContent=b;
+  document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');
+  document.getElementById('mValidity').textContent=v;
+  document.getElementById('modal').classList.add('show');
+}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 async function checkout(){
   const phone=document.getElementById('phone').value.trim().replace(/[\s\-()]/g,'');
@@ -90,7 +97,6 @@ async function checkout(){
     alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.');
     return;
   }
-
   if(!selected || !selected.p){
     alert('Please select a bundle again.');
     return;
@@ -102,8 +108,9 @@ async function checkout(){
     return;
   }
 
-  if(typeof window.Paystack !== 'function'){
-    alert('Paystack did not load. Please refresh the page and try again.');
+  if(typeof window.PaystackPop !== 'function'){
+    console.error('DataDeal GH: PaystackPop was not found.');
+    alert('Paystack library is not available on this page. Please refresh and try again.');
     return;
   }
 
@@ -116,9 +123,8 @@ async function checkout(){
   const reference='DDGH-'+Date.now();
 
   try{
-    const popup=new window.Paystack();
-
-    await popup.checkout({
+    const popup=new window.PaystackPop();
+    popup.newTransaction({
       key:DATADEAL_PAYSTACK_PUBLIC_KEY,
       email:email,
       amount:amount,
@@ -132,26 +138,20 @@ async function checkout(){
           {display_name:'Bundle ID',variable_name:'bundle_id',value:selected.id||''}
         ]
       },
-      onLoad:function(response){
-        console.log('Paystack loaded:',response);
-      },
+      onLoad:function(response){ console.log('Paystack checkout loaded.',response); },
       onSuccess:function(transaction){
-        alert(
-          'TEST PAYMENT COMPLETED\n\nReference: '+
-          (transaction.reference||reference)+
-          '\n\nThe payment still needs server-side verification before delivery.'
-        );
+        alert('TEST PAYMENT COMPLETED\n\nReference: '+(transaction.reference||reference)+
+          '\n\nPayment verification is still required before an order is marked PAID or a bundle is delivered.');
         closeModal();
       },
-      onCancel:function(){
-        alert('Payment window closed. No payment was completed.');
-      },
+      onCancel:function(){ alert('Payment window closed. No payment was completed.'); },
       onError:function(error){
+        console.error('Paystack transaction error:',error);
         alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));
       }
     });
   }catch(error){
-    console.error('Paystack checkout error:',error);
+    console.error('DataDeal GH Paystack error:',error);
     alert('Could not open Paystack: '+(error&&error.message?error.message:String(error)));
   }
 }
