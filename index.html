@@ -11,7 +11,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 @media(max-width:900px){.hero-in{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.feature-in,.step-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.links{display:none}}
 @media(max-width:520px){.hero-in{padding:55px 18px}.hero h1{letter-spacing:-2px}.cards{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.section h2,.cta h2{font-size:34px}.navin{padding:13px 15px}.brand{font-size:21px}}
 </style>
-<script src="https://js.paystack.co/v2/inline.js"></script>
+  <script src="https://js.paystack.co/v2/inline.js"></script>
 </head>
 <body>
 <nav class="nav"><div class="navin">
@@ -31,7 +31,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 <div class="feature"><span class="icon">🇬🇭</span><div><b>Made for Ghana</b><span class="muted">A Ghana-focused experience.</span></div></div>
 </div></section>
 
-<section id="bundles" class="section"><div class="center"><div class="eyebrow">Data Bundles</div><h2>Choose Your Network</h2><p class="muted">Demo prices shown for the first design version.</p></div><div class="tabs" id="tabs"></div><div class="cards" id="cards"></div></section>
+<section id="bundles" class="section"><div class="center"><div class="eyebrow">Data Bundles</div><h2>Choose Your Network</h2><p class="muted">Test checkout is enabled. Automatic bundle delivery will be connected next.</p></div><div class="tabs" id="tabs"></div><div class="cards" id="cards"></div></section>
 
 <section id="how" class="steps"><div class="section"><div class="center"><div class="eyebrow">Simple Process</div><h2>How It Works</h2></div><div class="step-grid">
 <div class="step"><div class="num">01</div><h3>Choose a bundle</h3><p class="muted">Select your network and preferred data package.</p></div>
@@ -45,7 +45,7 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 
 <button class="admin" onclick="openAdmin()">Admin Preview</button>
 
-<div id="modal" class="modal"><div class="modal-box"><div class="modal-head"><div><div class="muted">ORDER SUMMARY</div><h2 style="margin:3px 0 0">Confirm Bundle</h2></div><button class="close" onclick="closeModal()">×</button></div><div class="summary"><div class="row"><span>Network</span><b id="mNetwork"></b></div><div class="row"><span>Bundle</span><b id="mBundle"></b></div><div class="row"><span>Validity</span><b id="mValidity"></b></div><div class="row"><span>Price</span><b id="mPrice"></b></div></div><input id="phone" class="input" type="tel" placeholder="Recipient phone number"><button class="btn primary" style="width:100%;margin-top:12px" onclick="checkout()">Continue to Payment</button><p class="muted" style="text-align:center;margin-bottom:0;font-size:11px">Payment and automatic bundle delivery will be connected before live launch.</p></div></div>
+<div id="modal" class="modal"><div class="modal-box"><div class="modal-head"><div><div class="muted">ORDER SUMMARY</div><h2 style="margin:3px 0 0">Confirm Bundle</h2></div><button class="close" onclick="closeModal()">×</button></div><div class="summary"><div class="row"><span>Network</span><b id="mNetwork"></b></div><div class="row"><span>Bundle</span><b id="mBundle"></b></div><div class="row"><span>Validity</span><b id="mValidity"></b></div><div class="row"><span>Price</span><b id="mPrice"></b></div></div><input id="phone" class="input" type="tel" placeholder="Recipient phone number"><button class="btn primary" style="width:100%;margin-top:12px" onclick="checkout()">Continue to Payment</button><p class="muted" style="text-align:center;margin-bottom:0;font-size:11px">Paystack TEST mode is enabled. Payment verification and automatic delivery will be connected before live launch.</p></div></div>
 
 <div id="adminPanel" class="admin-panel"><div class="admin-top"><div><b style="font-size:22px">DataDeal GH Admin</b><div class="muted" id="adminSub">Secure management dashboard</div></div><button class="btn" style="background:#fee2e2;color:#b91c1c" onclick="closeAdmin()">Close</button></div><div class="admin-content" id="adminContent"></div></div>
 
@@ -79,7 +79,7 @@ function renderHeroNetworks(){
 }
 function renderCards(){
   const rows=allBundles.filter(b=>b.networks?.name===current);
-  document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
+  document.getElementById('cards').innerHTML=rows.length?rows.map((b,i)=>`<div class="card">${i===1?'<span class="popular">POPULAR</span>':''}<div class="muted">${b.networks?.name||''}</div><div class="gb">${b.data_amount}</div><div class="muted">Valid ${b.validity}</div><div class="price">GH₵${Number(b.price).toFixed(2).replace('.00','')}</div><button class="buy" onclick="openModal('${String(b.networks?.name||'').replace(/'/g,"\\'")}','${String(b.data_amount).replace(/'/g,"\\'")}','${b.price}','${String(b.validity).replace(/'/g,"\\'")}','${b.id}')">Buy Now</button></div>`).join(''):'<div class="card"><div class="gb">No bundles yet</div><p class="muted">The admin can add bundles from the dashboard.</p></div>';
 }
 function setNetwork(n){current=n;renderTabs();renderHeroNetworks();renderCards();}
 function openModal(n,b,p,v,id){selected={n,b,p,v,id};document.getElementById('mNetwork').textContent=n;document.getElementById('mBundle').textContent=b;document.getElementById('mPrice').textContent='GH₵'+Number(p).toFixed(2).replace('.00','');document.getElementById('mValidity').textContent=v;document.getElementById('modal').classList.add('show');}
@@ -90,38 +90,69 @@ async function checkout(){
     alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.');
     return;
   }
-  if(!selected || !selected.p){ alert('Please select a bundle again.'); return; }
-  const email=(prompt('Enter the customer email address for Paystack:')||'').trim();
-  if(!email || !email.includes('@')){ alert('Please enter a valid email address.'); return; }
-  if(typeof window.Paystack !== 'function'){
-    alert('Paystack is still loading. Please wait a few seconds and try again.');
+
+  if(!selected || !selected.p){
+    alert('Please select a bundle again.');
     return;
   }
+
+  const email=(prompt('Enter the customer email address for Paystack:')||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    alert('Please enter a valid email address.');
+    return;
+  }
+
+  if(typeof window.Paystack !== 'function'){
+    alert('Paystack did not load. Please refresh the page and try again.');
+    return;
+  }
+
+  const amount=Math.round(Number(selected.p)*100);
+  if(!Number.isFinite(amount) || amount<=0){
+    alert('This bundle has an invalid price.');
+    return;
+  }
+
   const reference='DDGH-'+Date.now();
+
   try{
     const popup=new window.Paystack();
+
     await popup.checkout({
       key:DATADEAL_PAYSTACK_PUBLIC_KEY,
       email:email,
-      amount:Math.round(Number(selected.p)*100),
+      amount:amount,
       currency:'GHS',
       reference:reference,
       phone:phone,
-      metadata:{custom_fields:[
-        {display_name:'Phone',variable_name:'phone',value:phone},
-        {display_name:'Bundle',variable_name:'bundle',value:selected.b+' '+selected.n}
-      ]},
+      metadata:{
+        custom_fields:[
+          {display_name:'Phone',variable_name:'phone',value:phone},
+          {display_name:'Bundle',variable_name:'bundle',value:selected.b+' '+selected.n},
+          {display_name:'Bundle ID',variable_name:'bundle_id',value:selected.id||''}
+        ]
+      },
+      onLoad:function(response){
+        console.log('Paystack loaded:',response);
+      },
       onSuccess:function(transaction){
-        alert('TEST PAYMENT COMPLETED\n\nReference: '+(transaction.reference||reference)+
-          '\n\nPayment must be verified securely before an order is marked PAID.');
+        alert(
+          'TEST PAYMENT COMPLETED\n\nReference: '+
+          (transaction.reference||reference)+
+          '\n\nThe payment still needs server-side verification before delivery.'
+        );
         closeModal();
       },
-      onCancel:function(){ alert('Payment window closed. No payment was completed.'); },
-      onError:function(error){ alert('Paystack error: '+(error&&error.message?error.message:'Unknown error')); }
+      onCancel:function(){
+        alert('Payment window closed. No payment was completed.');
+      },
+      onError:function(error){
+        alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));
+      }
     });
   }catch(error){
-    console.error(error);
-    alert('Could not open Paystack: '+(error&&error.message?error.message:error));
+    console.error('Paystack checkout error:',error);
+    alert('Could not open Paystack: '+(error&&error.message?error.message:String(error)));
   }
 }
 async function openAdmin(){
@@ -176,112 +207,7 @@ loadNetworks();
 </script>
 
 <script>
-/* DATADEAL GH — Paystack TEST integration.
-   Public key only. Never put a Paystack secret key in this file.
-*/
 const DATADEAL_PAYSTACK_PUBLIC_KEY = "pk_test_174700b123e49f18b6bb428a781a6bc4aa3a9b6f";
-
-window.startDataDealPaystackTest = async function(bundle) {
-  bundle = bundle || {};
-  const email = (prompt("Enter customer email:") || "").trim();
-  const phone = (prompt("Enter Ghana phone number:") || "").trim();
-  const amount = Number(bundle.price);
-
-  if (!email || !email.includes("@")) {
-    alert("Please enter a valid email address.");
-    return;
-  }
-  if (!/^(\+233|0)\d{9}$/.test(phone.replace(/\s/g, ""))) {
-    alert("Please enter a valid Ghana phone number.");
-    return;
-  }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    alert("This bundle has an invalid price.");
-    return;
-  }
-  if (typeof Paystack === "undefined") {
-    alert("Paystack did not load. Please refresh the page and try again.");
-    return;
-  }
-
-  const reference = "DDGH-" + Date.now();
-
-  try {
-    const popup = new Paystack();
-    await popup.checkout({
-      key: DATADEAL_PAYSTACK_PUBLIC_KEY,
-      email: email,
-      amount: Math.round(amount * 100),
-      currency: "GHS",
-      reference: reference,
-      phone: phone,
-      metadata: {
-        custom_fields: [
-          {display_name:"Phone", variable_name:"phone", value:phone},
-          {display_name:"Bundle", variable_name:"bundle", value:bundle.name || "Data bundle"}
-        ]
-      },
-      onSuccess: function(transaction) {
-        alert(
-          "TEST PAYMENT COMPLETED\n\n" +
-          "Reference: " + (transaction.reference || reference) +
-          "\n\nThis does NOT mark the DataDeal order as paid yet. " +
-          "We must verify the transaction securely on the server first."
-        );
-      },
-      onCancel: function() {
-        alert("Payment window closed. The order remains pending.");
-      },
-      onError: function(error) {
-        alert("Paystack error: " + (error && error.message ? error.message : "Unknown error"));
-      }
-    });
-  } catch (error) {
-    alert("Could not open Paystack: " + (error && error.message ? error.message : error));
-  }
-};
-
-/* If your existing page has an openModal(name,data,price,validity,id)
-   function, add a Paystack TEST button to the checkout modal. */
-(function() {
-  const originalOpenModal = window.openModal;
-  if (typeof originalOpenModal !== "function") return;
-
-  window.openModal = function(name, data, price, validity, id) {
-    const result = originalOpenModal.apply(this, arguments);
-    setTimeout(function() {
-      const modal = document.querySelector("#modal");
-      if (!modal || modal.querySelector("[data-paystack-test]")) return;
-
-      const button = document.createElement("button");
-      button.type = "button";
-      button.setAttribute("data-paystack-test", "1");
-      button.textContent = "Pay with Paystack (TEST)";
-      button.style.cssText =
-        "display:block;width:100%;margin-top:10px;padding:12px;border:0;" +
-        "border-radius:10px;background:#0b6b45;color:#fff;font-weight:700;cursor:pointer;";
-
-      button.addEventListener("click", function() {
-        window.startDataDealPaystackTest({
-          id: id,
-          name: name,
-          data: data,
-          price: Number(price),
-          validity: validity
-        });
-      });
-
-      const target = modal.querySelector(".primary") || modal.querySelector("button");
-      if (target && target.parentNode) {
-        target.parentNode.insertBefore(button, target.nextSibling);
-      } else {
-        modal.appendChild(button);
-      }
-    }, 50);
-    return result;
-  };
-})();
 </script>
-
 </body>
 </html>
