@@ -171,24 +171,50 @@ async function adminLogin(){
  if(error){msg.textContent=error.message;return}
  await renderAdmin();
 }
+
+function money(n){return 'GH₵'+Number(n||0).toFixed(2);}
+function supplierCost(o){
+  const c=Number(o.supplier_cost);
+  return Number.isFinite(c)&&c>0?c:0;
+}
+function renderProfitDashboard(o){
+  const paid=o.filter(x=>x.payment_status==='paid'||x.payment_status==='successful');
+  const sales=paid.reduce((s,x)=>s+Number(x.amount||0),0);
+  const cost=paid.reduce((s,x)=>s+supplierCost(x),0);
+  const profit=sales-cost;
+  const missing=paid.filter(x=>supplierCost(x)<=0).length;
+  const margin=sales?profit/sales*100:0;
+  const now=new Date(), m=now.getMonth(), y=now.getFullYear();
+  const mo=paid.filter(x=>{const d=new Date(x.created_at);return d.getMonth()===m&&d.getFullYear()===y;});
+  const ms=mo.reduce((s,x)=>s+Number(x.amount||0),0);
+  const mc=mo.reduce((s,x)=>s+supplierCost(x),0);
+  return `<div class="admin-table"><div class="eyebrow">BUSINESS FINANCE</div><h2 style="margin:4px 0">Profit Dashboard</h2><p class="muted">Gross profit = paid sales − recorded supplier cost.</p><div class="stats"><div class="stat">💵<div class="muted">Total Sales</div><strong>${money(sales)}</strong></div><div class="stat">📦<div class="muted">Supplier Cost</div><strong>${money(cost)}</strong></div><div class="stat">📈<div class="muted">Gross Profit</div><strong>${money(profit)}</strong></div><div class="stat">📊<div class="muted">Margin</div><strong>${margin.toFixed(1)}%</strong></div></div><div class="stats" style="margin-top:15px"><div class="stat"><div class="muted">This Month Sales</div><strong>${money(ms)}</strong></div><div class="stat"><div class="muted">This Month Cost</div><strong>${money(mc)}</strong></div><div class="stat"><div class="muted">This Month Profit</div><strong>${money(ms-mc)}</strong></div><div class="stat"><div class="muted">Paid Orders</div><strong>${paid.length}</strong></div></div>${missing?`<div class="summary" style="margin-top:15px;background:#fffbeb"><b>⚠ Supplier cost missing for ${missing} paid order${missing===1?'':'s'}.</b><p class="muted">Add supplier costs before treating the profit number as final.</p></div>`:''}</div>`;
+}
+function renderProfitOrders(o){
+  const paid=o.filter(x=>x.payment_status==='paid'||x.payment_status==='successful').slice(0,50);
+  if(!paid.length)return '<p class="muted">No paid orders yet.</p>';
+  return `<table><thead><tr><th>Date</th><th>Phone</th><th>Sale</th><th>Supplier Cost</th><th>Profit</th><th>Delivery</th></tr></thead><tbody>${paid.map(x=>{const s=Number(x.amount||0),c=supplierCost(x);return `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${x.customer_phone||''}</td><td>${money(s)}</td><td>${c?money(c):'Not recorded'}</td><td>${c?money(s-c):'—'}</td><td>${x.delivery_status||'pending'}</td></tr>`}).join('')}</tbody></table>`;
+}
+
 async function renderAdmin(){
- document.getElementById('adminSub').textContent='Signed in as administrator';
- const [{data:bundles},{data:orders},{count:customerCount}]=await Promise.all([
-   supabaseClient.from('bundles').select('*, networks(name)').order('created_at',{ascending:false}),
-   supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
-   supabaseClient.from('customers').select('*',{count:'exact',head:true})
- ]);
- const b=bundles||[], o=orders||[];
- const sales=o.filter(x=>x.payment_status==='paid'||x.payment_status==='successful').reduce((s,x)=>s+Number(x.amount||0),0);
- const pending=o.filter(x=>x.delivery_status==='pending').length;
- const delivered=o.filter(x=>x.delivery_status==='delivered'||x.delivery_status==='successful').length;
- document.getElementById('adminContent').innerHTML=`<div class="stats"><div class="stat">💰<div class="muted">Sales</div><strong>GH₵${sales.toFixed(2)}</strong></div><div class="stat">📦<div class="muted">Orders</div><strong>${o.length}</strong></div><div class="stat">⏳<div class="muted">Pending</div><strong>${pending}</strong></div><div class="stat">👥<div class="muted">Customers</div><strong>${customerCount||0}</strong></div></div><div class="admin-table"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Bundles</h2><button class="btn primary" onclick="showBundleForm()">+ Add Bundle</button></div><div id="bundleForm"></div><div id="bundleList">${renderBundleRows(b)}</div></div><div class="admin-table"><h2>Recent Orders</h2>${renderOrders(o)}</div>`;
+  document.getElementById('adminSub').textContent='Signed in as administrator';
+  const [{data:bundles,error:be},{data:orders,error:oe},{count:customerCount,error:ce}]=await Promise.all([
+    supabaseClient.from('bundles').select('*, networks(name)').order('created_at',{ascending:false}),
+    supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
+    supabaseClient.from('customers').select('*',{count:'exact',head:true})
+  ]);
+  if(be||oe||ce){document.getElementById('adminContent').innerHTML=`<div class="summary"><b>Dashboard could not load.</b><p class="muted">${[be,oe,ce].filter(Boolean).map(x=>x.message).join(' | ')}</p><button class="btn primary" onclick="renderAdmin()">Try Again</button></div>`;return;}
+  const b=bundles||[],o=orders||[];
+  const sales=o.filter(x=>x.payment_status==='paid'||x.payment_status==='successful').reduce((s,x)=>s+Number(x.amount||0),0);
+  const pending=o.filter(x=>x.delivery_status==='pending').length;
+  const delivered=o.filter(x=>x.delivery_status==='delivered'||x.delivery_status==='successful').length;
+  document.getElementById('adminContent').innerHTML=`<div class="stats"><div class="stat">💰<div class="muted">Sales</div><strong>${money(sales)}</strong></div><div class="stat">📦<div class="muted">Orders</div><strong>${o.length}</strong></div><div class="stat">⏳<div class="muted">Pending</div><strong>${pending}</strong></div><div class="stat">👥<div class="muted">Customers</div><strong>${customerCount||0}</strong></div></div>${renderProfitDashboard(o)}<div class="admin-table"><h2>Paid Orders & Profit</h2>${renderProfitOrders(o)}</div><div class="admin-table"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Bundles</h2><button class="btn primary" onclick="showBundleForm()">+ Add Bundle</button></div><div id="bundleForm"></div><div id="bundleList">${renderBundleRows(b)}</div></div><div class="admin-table"><h2>Recent Orders</h2>${renderOrders(o)}</div><div class="summary"><b>Delivered orders: ${delivered}</b><p class="muted">Profit shown here is gross profit. Paystack fees, taxes, refunds and other expenses are not included yet.</p></div>`;
 }
 function renderBundleRows(b){return b.length?`<table><thead><tr><th>Network</th><th>Data</th><th>Price</th><th>Validity</th><th>Status</th><th>Actions</th></tr></thead><tbody>${b.map(x=>`<tr><td>${x.networks?.name||''}</td><td>${x.data_amount}</td><td>GH₵${Number(x.price).toFixed(2)}</td><td>${x.validity}</td><td>${x.active?'🟢 Active':'⚪ Off'}</td><td><button class="btn" style="padding:7px 9px;background:#e0e7ff;color:#3730a3" onclick="editBundle('${x.id}')">Edit</button> <button class="btn" style="padding:7px 9px;background:#fee2e2;color:#b91c1c" onclick="deleteBundle('${x.id}')">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p class="muted">No bundles yet. Add your first bundle.</p>'}
 function renderOrders(o){return o.length?`<table><thead><tr><th>Phone</th><th>Amount</th><th>Payment</th><th>Delivery</th><th>Date</th></tr></thead><tbody>${o.slice(0,20).map(x=>`<tr><td>${x.customer_phone}</td><td>GH₵${Number(x.amount).toFixed(2)}</td><td>${x.payment_status}</td><td>${x.delivery_status}</td><td>${new Date(x.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">No orders yet.</p>'}
 function showBundleForm(bundle=null){
  const options=networks.map(n=>`<option value="${n.id}">${n.name}</option>`).join('');
- document.getElementById('bundleForm').innerHTML=`<div class="summary" style="margin-top:15px"><h3>${bundle?'Edit Bundle':'Add Bundle'}</h3><input id="bfId" type="hidden" value="${bundle?.id||''}"><select id="bfNetwork" class="input" style="margin-top:8px">${options}</select><input id="bfData" class="input" placeholder="Data amount e.g. 5 GB" style="margin-top:8px" value="${bundle?.data_amount||''}"><input id="bfPrice" class="input" type="number" step="0.01" placeholder="Price e.g. 20" style="margin-top:8px" value="${bundle?.price||''}"><input id="bfValidity" class="input" placeholder="Validity e.g. 7 days" style="margin-top:8px" value="${bundle?.validity||''}"><label style="display:block;margin:12px 0"><input id="bfActive" type="checkbox" ${bundle?.active!==false?'checked':''}> Active</label><button class="btn primary" onclick="saveBundle()">Save Bundle</button> <button class="btn" onclick="document.getElementById('bundleForm').innerHTML=''">Cancel</button></div>`;
+ document.getElementById('bundleForm').innerHTML=`<div class="summary" style="margin-top:15px"><h3>${bundle?'Edit Bundle':'Add Bundle'}</h3><input id="bfId" type="hidden" value="${bundle?.id||''}"><select id="bfNetwork" class="input" style="margin-top:8px">${options}</select><input id="bfData" class="input" placeholder="Data amount e.g. 5 GB" style="margin-top:8px" value="${bundle?.data_amount||''}"><input id="bfPrice" class="input" type="number" step="0.01" placeholder="Selling price e.g. 20" style="margin-top:8px" value="${bundle?.price||''}"><input id="bfSupplierCost" class="input" type="number" step="0.01" placeholder="Supplier cost e.g. 14" style="margin-top:8px" value="${bundle?.supplier_cost||''}"><input id="bfValidity" class="input" placeholder="Validity e.g. 7 days" style="margin-top:8px" value="${bundle?.validity||''}"><label style="display:block;margin:12px 0"><input id="bfActive" type="checkbox" ${bundle?.active!==false?'checked':''}> Active</label><button class="btn primary" onclick="saveBundle()">Save Bundle</button> <button class="btn" onclick="document.getElementById('bundleForm').innerHTML=''">Cancel</button></div>`;
  if(bundle) document.getElementById('bfNetwork').value=bundle.network_id;
 }
 async function editBundle(id){
@@ -196,7 +222,7 @@ async function editBundle(id){
  if(error){alert(error.message);return} showBundleForm(data); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
 }
 async function saveBundle(){
- const id=document.getElementById('bfId').value, payload={network_id:document.getElementById('bfNetwork').value,name:document.getElementById('bfData').value.trim(),data_amount:document.getElementById('bfData').value.trim(),price:Number(document.getElementById('bfPrice').value),validity:document.getElementById('bfValidity').value.trim(),active:document.getElementById('bfActive').checked};
+ const id=document.getElementById('bfId').value, payload={network_id:document.getElementById('bfNetwork').value,name:document.getElementById('bfData').value.trim(),data_amount:document.getElementById('bfData').value.trim(),price:Number(document.getElementById('bfPrice').value),supplier_cost:Number(document.getElementById('bfSupplierCost').value||0),validity:document.getElementById('bfValidity').value.trim(),active:document.getElementById('bfActive').checked};
  if(!payload.data_amount||!payload.price||!payload.validity){alert('Please complete all bundle fields.');return}
  let result=id?await supabaseClient.from('bundles').update(payload).eq('id',id):await supabaseClient.from('bundles').insert(payload);
  if(result.error){alert(result.error.message);return} alert('Bundle saved successfully.'); await renderAdmin(); await loadBundles();
