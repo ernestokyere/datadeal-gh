@@ -97,7 +97,7 @@ async function checkout(){
     alert('Please enter a valid Ghana number, e.g. 0241234567 or +233241234567.');
     return;
   }
-  if(!selected || !selected.p){
+  if(!selected || !selected.p || !selected.id){
     alert('Please select a bundle again.');
     return;
   }
@@ -109,50 +109,102 @@ async function checkout(){
   }
 
   if(typeof window.PaystackPop !== 'function'){
-    console.error('DataDeal GH: PaystackPop was not found.');
     alert('Paystack library is not available on this page. Please refresh and try again.');
     return;
   }
 
-  const amount=Math.round(Number(selected.p)*100);
+  const amount=Number(selected.p);
   if(!Number.isFinite(amount) || amount<=0){
     alert('This bundle has an invalid price.');
     return;
   }
 
-  const reference='DDGH-'+Date.now();
-
   try{
+    let customerId=null;
+    const lookup=await supabaseClient.from('customers').select('id').eq('phone',phone).maybeSingle();
+    if(lookup.error){ alert('Could not check the customer: '+lookup.error.message); return; }
+
+    if(lookup.data){
+      customerId=lookup.data.id;
+    }else{
+      const created=await supabaseClient.from('customers').insert({phone:phone,email:email}).select('id').single();
+      if(created.error){ alert('Could not create the customer: '+created.error.message); return; }
+      customerId=created.data.id;
+    }
+
+    const order=await supabaseClient.from('orders').insert({
+      customer_id:customerId,
+      bundle_id:selected.id,
+      customer_phone:phone,
+      amount:amount,
+      payment_status:'pending',
+      delivery_status:'pending'
+    }).select('id').single();
+
+    if(order.error){
+      alert('Could not create the order: '+order.error.message);
+      return;
+    }
+
+    const orderId=order.data.id;
+    const reference='DDGH-'+Date.now()+'-'+String(orderId).slice(0,8);
     const popup=new window.PaystackPop();
+
     popup.newTransaction({
       key:DATADEAL_PAYSTACK_PUBLIC_KEY,
       email:email,
-      amount:amount,
+      amount:Math.round(amount*100),
       currency:'GHS',
       reference:reference,
       phone:phone,
-      metadata:{
-        custom_fields:[
-          {display_name:'Phone',variable_name:'phone',value:phone},
-          {display_name:'Bundle',variable_name:'bundle',value:selected.b+' '+selected.n},
-          {display_name:'Bundle ID',variable_name:'bundle_id',value:selected.id||''}
-        ]
-      },
-      onLoad:function(response){ console.log('Paystack checkout loaded.',response); },
-      onSuccess:function(transaction){
-        alert('TEST PAYMENT COMPLETED\n\nReference: '+(transaction.reference||reference)+
-          '\n\nPayment verification is still required before an order is marked PAID or a bundle is delivered.');
+      metadata:{custom_fields:[
+        {display_name:'Phone',variable_name:'phone',value:phone},
+        {display_name:'Bundle',variable_name:'bundle',value:selected.b+' '+selected.n},
+        {display_name:'Bundle ID',variable_name:'bundle_id',value:selected.id},
+        {display_name:'DataDeal Order ID',variable_name:'order_id',value:orderId}
+      ]},
+      onSuccess:async function(transaction){
+        const txReference=transaction.reference||reference;
+
+        const saved=await supabaseClient.from('orders')
+          .update({payment_reference:txReference})
+          .eq('id',orderId);
+
+        if(saved.error){
+          alert('Payment succeeded, but the payment reference could not be saved. Contact the administrator.');
+          return;
+        }
+
+        const response=await fetch(
+          SUPABASE_URL+'/functions/v1/verify-paystack-payment',
+          {
+            method:'POST',
+            headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+            body:JSON.stringify({order_id:orderId,reference:txReference})
+          }
+        );
+
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok || !result.success){
+          console.error('Verification failed:',result);
+          alert('Payment was received, but secure verification did not complete. The order remains pending.');
+          return;
+        }
+
+        alert('PAYMENT VERIFIED SUCCESSFULLY\n\nReference: '+txReference+
+          '\n\nOrder ID: '+orderId+
+          '\n\nThe order is now marked PAID. Automatic bundle delivery will be connected next.');
         closeModal();
       },
-      onCancel:function(){ alert('Payment window closed. No payment was completed.'); },
+      onCancel:function(){ alert('Payment window closed. The order remains pending.'); },
       onError:function(error){
-        console.error('Paystack transaction error:',error);
+        console.error('Paystack error:',error);
         alert('Paystack error: '+(error&&error.message?error.message:'Unknown error'));
       }
     });
   }catch(error){
-    console.error('DataDeal GH Paystack error:',error);
-    alert('Could not open Paystack: '+(error&&error.message?error.message:String(error)));
+    console.error(error);
+    alert('Could not start checkout: '+(error&&error.message?error.message:String(error)));
   }
 }
 async function openAdmin(){
