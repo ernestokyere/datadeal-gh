@@ -21,6 +21,25 @@ a{text-decoration:none;color:inherit}.nav{position:sticky;top:0;z-index:20;backg
 .receipt-overlay{position:fixed;inset:0;background:rgba(2,6,23,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:200}.receipt-overlay.show{display:flex}.receipt-box{background:#fff;width:100%;max-width:520px;border-radius:28px;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,.35)}.receipt-top{background:linear-gradient(135deg,#155eef,#173b9c);color:#fff;padding:28px;text-align:center}.receipt-check{width:58px;height:58px;border-radius:50%;background:#fff;color:#155eef;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;margin:0 auto 12px}.receipt-top h2{margin:0;font-size:28px}.receipt-top p{margin:7px 0 0;color:#dbeafe}.receipt-body{padding:24px}.receipt-status{display:inline-block;padding:7px 12px;border-radius:99px;font-size:11px;font-weight:900;margin-bottom:15px}.receipt-status.delivered{background:#dcfce7;color:#166534}.receipt-status.processing{background:#fef3c7;color:#92400e}.receipt-status.failed{background:#fee2e2;color:#991b1b}.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;border-radius:18px;padding:15px}.receipt-item{padding:9px}.receipt-item span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.receipt-item b{font-size:14px;word-break:break-word}.receipt-total{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #cbd5e1;margin-top:18px;padding-top:18px}.receipt-total strong{font-size:25px}.receipt-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.receipt-close{width:100%;margin-top:10px;background:#f1f5f9;color:#0f172a}.receipt-note{font-size:12px;color:#64748b;text-align:center;margin:15px 0 0;line-height:1.5}@media(max-width:520px){.receipt-grid,.receipt-actions{grid-template-columns:1fr}}
 
 .notification-toast{position:fixed;right:18px;bottom:82px;width:min(380px,calc(100% - 36px));background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 18px 50px rgba(15,23,42,.2);padding:15px 17px;display:none;z-index:250}.notification-toast.show{display:block}.notification-toast .nt-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.notification-toast .nt-title{font-weight:900}.notification-toast .nt-close{border:0;background:#f1f5f9;border-radius:50%;width:28px;height:28px;cursor:pointer}.notification-toast .nt-body{color:#475569;font-size:13px;line-height:1.5;margin-top:7px}.notification-toast.success{border-left:5px solid #16a34a}.notification-toast.processing{border-left:5px solid #d97706}.notification-toast.failed{border-left:5px solid #dc2626}.notification-toast.info{border-left:5px solid #155eef}.support-wa{background:#16a34a!important;color:#fff!important}.receipt-support{display:none;margin-top:14px;padding:13px;border-radius:14px;background:#fef2f2;color:#991b1b;font-size:13px;line-height:1.5}.receipt-support.show{display:block}
+
+/* Admin business dashboard */
+.biz-dashboard{margin-top:22px;background:#fff;border-radius:20px;padding:20px;border:1px solid #e2e8f0}
+.biz-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:18px}
+.biz-head h2{margin:3px 0}
+.biz-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.biz-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:16px}
+.biz-kpi .klabel{color:#64748b;font-size:12px}
+.biz-kpi strong{display:block;font-size:25px;margin-top:6px}
+.biz-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.biz-alert{margin-top:14px;padding:13px 15px;border-radius:14px;background:#fffbeb;border:1px solid #fde68a}
+.biz-alert.danger{background:#fef2f2;border-color:#fecaca}
+.biz-table{margin-top:18px;overflow:auto}
+.biz-table table{min-width:720px}
+.biz-pill{display:inline-block;padding:5px 8px;border-radius:99px;font-size:10px;font-weight:900}
+.biz-pill.green{background:#dcfce7;color:#166534}.biz-pill.yellow{background:#fef3c7;color:#92400e}.biz-pill.red{background:#fee2e2;color:#991b1b}.biz-pill.gray{background:#e2e8f0;color:#475569}
+.biz-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){.biz-kpis{grid-template-columns:repeat(2,1fr)}.biz-mini{grid-template-columns:1fr}}
+@media(max-width:520px){.biz-kpis{grid-template-columns:1fr}}
 </style>
 <script src="https://js.paystack.co/v2/inline.js"></script>
 </head>
@@ -321,6 +340,73 @@ async function openAdmin(){
 function closeAdmin(){document.getElementById("adminPanel").classList.remove("show")}
 function renderLogin(){document.getElementById("adminContent").innerHTML=`<div class="modal-box" style="margin:40px auto;max-width:460px"><div class="eyebrow">ADMIN ACCESS</div><h2 style="margin-top:8px">Sign in to DataDeal GH</h2><p class="muted">Use the administrator email and password you created in Supabase Authentication.</p><input id="adminEmail" class="input" type="email" placeholder="Admin email"><input id="adminPassword" class="input" type="password" placeholder="Password" style="margin-top:10px"><button class="btn primary" style="width:100%;margin-top:12px" onclick="adminLogin()">Sign in</button><p id="loginMsg" class="muted" style="margin-top:12px"></p></div>`}
 async function adminLogin(){const email=document.getElementById("adminEmail").value.trim(),password=document.getElementById("adminPassword").value,msg=document.getElementById("loginMsg");msg.textContent="Signing in...";const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){msg.textContent=error.message;return}await renderAdmin()}
+
+function bizMoney(v){return 'GH₵'+Number(v||0).toFixed(2)}
+function bizPaid(o){return ['paid','successful'].includes(String(o.payment_status||'').toLowerCase())}
+function bizDelivered(o){return ['delivered','successful','completed'].includes(String(o.delivery_status||'').toLowerCase())}
+function bizFailed(o){return ['failed','failure','cancelled','canceled'].includes(String(o.delivery_status||'').toLowerCase())}
+function bizSupplierCost(o){const n=Number(o.supplier_cost);return Number.isFinite(n)&&n>0?n:0}
+
+function renderBusinessDashboard(orders){
+  const o=orders||[];
+  const paid=o.filter(bizPaid);
+  const sales=paid.reduce((s,x)=>s+Number(x.amount||0),0);
+  const cost=paid.reduce((s,x)=>s+bizSupplierCost(x),0);
+  const profit=sales-cost;
+  const missing=paid.filter(x=>bizSupplierCost(x)<=0).length;
+  const delivered=o.filter(bizDelivered).length;
+  const failed=o.filter(bizFailed).length;
+  const processing=o.length-delivered-failed;
+  const successRate=o.length?(delivered/o.length*100):0;
+  const now=new Date();
+  const todayKey=now.toDateString();
+  const today=paid.filter(x=>new Date(x.created_at).toDateString()===todayKey);
+  const month=paid.filter(x=>{const d=new Date(x.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
+  const todaySales=today.reduce((s,x)=>s+Number(x.amount||0),0);
+  const monthSales=month.reduce((s,x)=>s+Number(x.amount||0),0);
+  const todayCost=today.reduce((s,x)=>s+bizSupplierCost(x),0);
+  const monthCost=month.reduce((s,x)=>s+bizSupplierCost(x),0);
+
+  return `<div class="biz-dashboard">
+    <div class="biz-head"><div><div class="eyebrow">BUSINESS OVERVIEW</div><h2>DataDeal GH Performance</h2><p class="muted">Live figures calculated from your orders table.</p></div>
+    <div class="biz-actions"><button class="btn primary" onclick="renderAdmin()">Refresh</button></div></div>
+
+    <div class="biz-kpis">
+      <div class="biz-kpi">💰<div class="klabel">Total Sales</div><strong>${bizMoney(sales)}</strong></div>
+      <div class="biz-kpi">📦<div class="klabel">Supplier Cost</div><strong>${bizMoney(cost)}</strong></div>
+      <div class="biz-kpi">📈<div class="klabel">Gross Profit</div><strong>${bizMoney(profit)}</strong></div>
+      <div class="biz-kpi">📊<div class="klabel">Profit Margin</div><strong>${sales?(profit/sales*100).toFixed(1):'0.0'}%</strong></div>
+    </div>
+
+    <div class="biz-mini">
+      <div class="biz-kpi"><div class="klabel">Today's Sales</div><strong>${bizMoney(todaySales)}</strong><span class="muted">${today.length} paid order(s)</span></div>
+      <div class="biz-kpi"><div class="klabel">This Month's Sales</div><strong>${bizMoney(monthSales)}</strong><span class="muted">${month.length} paid order(s)</span></div>
+      <div class="biz-kpi"><div class="klabel">Today's Profit</div><strong>${bizMoney(todaySales-todayCost)}</strong><span class="muted">After recorded supplier costs</span></div>
+    </div>
+
+    <div class="biz-mini">
+      <div class="biz-kpi"><div class="klabel">Delivered</div><strong>${delivered}</strong></div>
+      <div class="biz-kpi"><div class="klabel">Processing</div><strong>${processing}</strong></div>
+      <div class="biz-kpi"><div class="klabel">Failed</div><strong>${failed}</strong></div>
+    </div>
+
+    ${missing?`<div class="biz-alert"><b>⚠ ${missing} paid order(s) have no supplier cost recorded.</b><div class="muted">Profit is incomplete until supplier costs are recorded.</div></div>`:''}
+    ${failed?`<div class="biz-alert danger"><b>🔴 ${failed} delivery failure(s) need attention.</b><div class="muted">Review failed orders and contact customers where necessary.</div></div>`:''}
+
+    <div class="biz-table"><h3>Recent Business Activity</h3>
+      ${o.length?`<table><thead><tr><th>Date</th><th>Order</th><th>Amount</th><th>Payment</th><th>Delivery</th><th>Profit</th></tr></thead><tbody>
+      ${o.slice(0,25).map(x=>{
+        const c=bizSupplierCost(x), s=Number(x.amount||0);
+        const profitCell=bizPaid(x)?(c?bizMoney(s-c):'Missing cost'):'—';
+        const dp=bizDelivered(x)?'<span class="biz-pill green">DELIVERED</span>':bizFailed(x)?'<span class="biz-pill red">FAILED</span>':'<span class="biz-pill yellow">PROCESSING</span>';
+        const pp=bizPaid(x)?'<span class="biz-pill green">PAID</span>':'<span class="biz-pill gray">'+String(x.payment_status||'PENDING').toUpperCase()+'</span>';
+        return `<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${String(x.id||'').slice(0,8)}…</td><td>${bizMoney(s)}</td><td>${pp}</td><td>${dp}</td><td>${profitCell}</td></tr>`
+      }).join('')}</tbody></table>`:'<p class="muted">No orders yet.</p>'}
+    </div>
+    <div class="summary" style="margin-top:18px"><b>Delivery success rate: ${successRate.toFixed(1)}%</b><p class="muted">Gross profit excludes Paystack fees, taxes, refunds and other operating expenses.</p></div>
+  </div>`;
+}
+
 async function renderAdmin(){
  document.getElementById("adminSub").textContent="Signed in as administrator";
  const [{data:bundles,error:be},{data:orders,error:oe},{count:customerCount,error:ce}]=await Promise.all([
@@ -330,7 +416,7 @@ async function renderAdmin(){
  ]);
  if(be||oe||ce){document.getElementById("adminContent").innerHTML=`<div class="summary"><b>Dashboard could not load.</b><p class="muted">${[be,oe,ce].filter(Boolean).map(x=>escapeHTML(x.message)).join(" | ")}</p><button class="btn primary" onclick="renderAdmin()">Try Again</button></div>`;return}
  const b=bundles||[],o=orders||[],sales=o.filter(x=>x.payment_status==="paid"||x.payment_status==="successful").reduce((s,x)=>s+Number(x.amount||0),0),pending=o.filter(x=>x.delivery_status==="pending").length,delivered=o.filter(x=>x.delivery_status==="delivered"||x.delivery_status==="successful").length;
- document.getElementById("adminContent").innerHTML=`<div class="stats"><div class="stat">💰<div class="muted">Sales</div><strong>${money(sales)}</strong></div><div class="stat">📦<div class="muted">Orders</div><strong>${o.length}</strong></div><div class="stat">⏳<div class="muted">Pending</div><strong>${pending}</strong></div><div class="stat">👥<div class="muted">Customers</div><strong>${customerCount||0}</strong></div></div>${renderProfitDashboard(o)}<div class="admin-table"><h2>Paid Orders & Profit</h2>${renderProfitOrders(o)}</div><div class="admin-table"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Bundles</h2><button class="btn primary" onclick="showBundleForm()">+ Add Bundle</button></div><div id="bundleForm"></div><div id="bundleList">${renderBundleRows(b)}</div></div><div class="admin-table"><h2>Recent Orders</h2>${renderOrders(o)}</div><div class="summary"><b>Delivered orders: ${delivered}</b><p class="muted">Profit shown here is gross profit. Paystack fees, taxes, refunds and other expenses are not included yet.</p></div>`;
+ document.getElementById("adminContent").innerHTML=`<div class="stats"><div class="stat">💰<div class="muted">Sales</div><strong>${money(sales)}</strong></div><div class="stat">📦<div class="muted">Orders</div><strong>${o.length}</strong></div><div class="stat">⏳<div class="muted">Pending</div><strong>${pending}</strong></div><div class="stat">👥<div class="muted">Customers</div><strong>${customerCount||0}</strong></div></div>${renderBusinessDashboard(o)}${renderProfitDashboard(o)}<div class="admin-table"><h2>Paid Orders & Profit</h2>${renderProfitOrders(o)}</div><div class="admin-table"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Bundles</h2><button class="btn primary" onclick="showBundleForm()">+ Add Bundle</button></div><div id="bundleForm"></div><div id="bundleList">${renderBundleRows(b)}</div></div><div class="admin-table"><h2>Recent Orders</h2>${renderOrders(o)}</div><div class="summary"><b>Delivered orders: ${delivered}</b><p class="muted">Profit shown here is gross profit. Paystack fees, taxes, refunds and other expenses are not included yet.</p></div>`;
 }
 function renderBundleRows(b){return b.length?`<table><thead><tr><th>Network</th><th>Data</th><th>Price</th><th>Validity</th><th>Status</th><th>Actions</th></tr></thead><tbody>${b.map(x=>`<tr><td>${escapeHTML(x.networks?.name||"")}</td><td>${escapeHTML(x.data_amount)}</td><td>${money(x.price)}</td><td>${escapeHTML(x.validity)}</td><td>${x.active?"🟢 Active":"⚪ Off"}</td><td><button class="btn" style="padding:7px 9px;background:#e0e7ff;color:#3730a3" onclick="editBundle('${safeAttr(x.id)}')">Edit</button> <button class="btn" style="padding:7px 9px;background:#fee2e2;color:#b91c1c" onclick="deleteBundle('${safeAttr(x.id)}')">Delete</button></td></tr>`).join("")}</tbody></table>`:'<p class="muted">No bundles yet. Add your first bundle.</p>'}
 function renderOrders(o){return o.length?`<table><thead><tr><th>Phone</th><th>Amount</th><th>Payment</th><th>Delivery</th><th>Date</th></tr></thead><tbody>${o.slice(0,20).map(x=>`<tr><td>${escapeHTML(x.customer_phone||"")}</td><td>${money(x.amount)}</td><td>${escapeHTML(x.payment_status||"")}</td><td>${escapeHTML(x.delivery_status||"")}</td><td>${new Date(x.created_at).toLocaleString()}</td></tr>`).join("")}</tbody></table>`:'<p class="muted">No orders yet.</p>'}
