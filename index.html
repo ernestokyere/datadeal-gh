@@ -140,8 +140,9 @@ function renderAdminMessage(message,type="info"){
 function adminButton(label,fn,cls="neutral"){return `<button class="btn small ${cls}" onclick="${fn}">${label}</button>`}
 
 async function renderAdmin(view="dashboard"){
-  logoutButton.style.display="inline-block";
-  document.getElementById("adminSub").textContent="Signed in • Secure management dashboard";
+  if(logoutButtonEl)logoutButtonEl.style.display="inline-block";
+  const logoutButtonEl=document.getElementById("logoutButton");
+  if(logoutButtonEl)logoutButtonEl.style.display="inline-block";
   adminContentEl.innerHTML=`<div class="admin-note">Loading admin dashboard...</div>`;
   try{
     const [b,o,c,n]=await Promise.all([
