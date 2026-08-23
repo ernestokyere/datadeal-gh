@@ -20,6 +20,7 @@
 <div id="adminPanel" class="admin-panel"><div class="admin-top"><b>DataDeal GH Admin</b><div><button id="logoutButton" class="btn" style="display:none" onclick="adminLogout()">Sign out</button> <button class="btn" onclick="closeAdmin()">Close</button></div></div><div class="admin-content" id="adminContent"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
 const SUPABASE_URL="https://uilspajywsmsjugfqwhh.supabase.co",SUPABASE_KEY="sb_publishable_jDp7fb_SzNRDnP5hTuzxeA_e_X29gcL",PAYSTACK_KEY="pk_test_174700b123e49f18b6bb428a781a6bc4aa3a9b6f4aa3a9b6f".replace("4aa3a9b6f4aa3a9b6f","4aa3a9b6f"),WA="233536482161",CHANNEL="https://www.whatsapp.com/channel/0029VbD4VpwGzzKJ2CBbCD1e",STATUS_FN=SUPABASE_URL+"/functions/v1/get-order-status",VERIFY_FN=SUPABASE_URL+"/functions/v1/verify-paystack-payment",db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const adminContentEl=document.getElementById("adminContent"),logoutButtonEl=document.getElementById("logoutButton");
 let networks=[],current="MTN",selected=null,allBundles=[],timer=null,latest=null;
 const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;"),money=v=>"GH₵"+Number(v||0).toFixed(2),phone=v=>String(v||"").replace(/[\s\-()]/g,""),valid=v=>/^(0\d{9}|\+233\d{9}|233\d{9})$/.test(v),attr=v=>String(v??"").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
 async function loadNetworks(){let r=await db.from("networks").select("*").eq("active",true).order("name");if(r.error){document.getElementById("cards").innerHTML='<div class="card"><b>Could not load networks.</b></div>';return}networks=r.data||[];if(networks.length&&!networks.some(n=>n.name===current))current=networks[0].name;renderTabs();renderHero();loadBundles()}
@@ -65,8 +66,6 @@ async function openAdmin(){
 }
 function closeAdmin(){adminPanel.classList.remove("show")}
 function renderLogin(){
-  const logoutButtonEl=document.getElementById("logoutButton");
-  const adminContentEl=document.getElementById("adminContent");
   if(logoutButtonEl)logoutButtonEl.style.display="none";
   if(!adminContentEl)return;
 
@@ -129,7 +128,6 @@ async function adminLogout(){
     adminNotice(error.message,"error");
     return;
   }
-  const logoutButtonEl=document.getElementById("logoutButton");
   if(logoutButtonEl)logoutButtonEl.style.display="none";
   renderLogin();
 }
@@ -141,7 +139,6 @@ function adminButton(label,fn,cls="neutral"){return `<button class="btn small ${
 
 async function renderAdmin(view="dashboard"){
   if(logoutButtonEl)logoutButtonEl.style.display="inline-block";
-  const logoutButtonEl=document.getElementById("logoutButton");
   if(logoutButtonEl)logoutButtonEl.style.display="inline-block";
   adminContentEl.innerHTML=`<div class="admin-note">Loading admin dashboard...</div>`;
   try{
